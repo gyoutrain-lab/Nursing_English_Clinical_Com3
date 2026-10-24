@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spoken Nursing Care Plan: Informal to Formal Matrix Challenge</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    @keyframes bamShake {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      15% { transform: translate(-12px, -12px) rotate(-3deg); }
+      30% { transform: translate(12px, 12px) rotate(3deg); }
+      45% { transform: translate(-10px, 10px) rotate(-2deg); }
+      60% { transform: translate(10px, -10px) rotate(2deg); }
+      75% { transform: translate(-5px, 0px) rotate(-1deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+    .bam-effect {
+      animation: bamShake 0.45s ease-in-out;
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #09121d 0%, #111e2e 50%, #082032 100%);
+    }
+  </style>
+</head>
+<body class="gradient-bg text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-700/60 sticky top-0 z-40 px-4 py-3 shadow-lg">
+    <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-3">
+      <div>
+        <h1 class="text-xl md:text-2xl font-extrabold text-amber-400 tracking-wide">
+          🏥 Reverse Clinical Matrix: Informal ➔ Formal
+        </h1>
+        <p class="text-xs text-slate-400">Curriculum & Author: <span class="text-teal-300 font-semibold">Giyono Asfarrasyid</span></p>
+      </div>
+
+      <!-- SCOREBOARD & STATS -->
+      <div class="flex items-center gap-4 bg-slate-800/90 px-4 py-2 rounded-xl border border-slate-700">
+        <div class="text-center">
+          <span class="text-xs text-slate-400 block uppercase font-bold tracking-wider">Score</span>
+          <span id="scoreDisplay" class="text-2xl font-black text-amber-400">0</span>
+        </div>
+        <div class="h-8 w-px bg-slate-700"></div>
+        <div class="text-center">
+          <span class="text-xs text-slate-400 block uppercase font-bold tracking-wider">Streak</span>
+          <span id="streakDisplay" class="text-2xl font-black text-emerald-400">0🔥</span>
+        </div>
+        <div class="h-8 w-px bg-slate-700"></div>
+        <div class="text-center">
+          <span class="text-xs text-slate-400 block uppercase font-bold tracking-wider">Scenario</span>
+          <span id="caseProgressDisplay" class="text-sm font-bold text-sky-300">1 / 10</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main id="mainContainer" class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+    <!-- GAME CONTROLS & MODULE SELECTION -->
+    <section class="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/80 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center gap-2">
+        <label for="moduleSelect" class="text-sm font-semibold text-slate-300">Module Filter:</label>
+        <select id="moduleSelect" class="bg-slate-900 border border-slate-600 text-amber-300 text-sm rounded-lg p-2 focus:ring-2 focus:ring-amber-400 outline-none">
+          <option value="all">All Clinical Modules (Comprehensive Challenge)</option>
+          <option value="1">Module 1: Pain & Symptom Intake</option>
+          <option value="2">Module 2: Vital Signs & Decompensation</option>
+          <option value="3">Module 3: Nursing Care Plan Goals</option>
+          <option value="4">Module 4: Emergency Escalation (ISBAR)</option>
+          <option value="5">Module 5: Medication Administration & Refusal</option>
+          <option value="6">Module 6: Wounds & Dressings</option>
+          <option value="7">Module 7: Respiratory Evaluation</option>
+          <option value="8">Module 8: HR & Administrative Requests</option>
+          <option value="9">Module 9: Pediatric Fever Care</option>
+          <option value="10">Module 10: Critical Care & Code Calls</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="resetBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-3 py-2 rounded-lg transition font-medium">
+          🔄 Reset Matrix
+        </button>
+        <button id="soundToggle" class="bg-amber-700 hover:bg-amber-600 text-white text-xs px-3 py-2 rounded-lg transition font-medium">
+          🔊 Sound: ON
+        </button>
+      </div>
+    </section>
+
+    <!-- PROMPT & SCENARIO CARD -->
+    <section class="bg-slate-800/90 rounded-2xl p-6 border border-slate-700 shadow-xl relative overflow-hidden">
+      <div class="flex items-center justify-between mb-3">
+        <span id="badgeCategory" class="bg-amber-900/80 text-amber-300 text-xs font-bold px-3 py-1 rounded-full uppercase border border-amber-500/40">
+          Module Phase
+        </span>
+        <span id="badgeTargetType" class="bg-teal-900/80 text-teal-300 text-xs font-bold px-3 py-1 rounded-full border border-teal-500/40">
+          Identify ALL Formal Matches
+        </span>
+      </div>
+
+      <!-- VISUAL DESCRIPTION -->
+      <div id="visualDescription" class="italic text-xs text-slate-400 mb-4 bg-slate-900/60 p-3 rounded-lg border-l-4 border-amber-500">
+        "Visual description of bedside setting..."
+      </div>
+
+      <!-- INFORMAL BEDSIDE STATEMENT (PROMPT) -->
+      <div class="mb-4">
+        <h2 class="text-xs uppercase font-extrabold text-slate-400 tracking-wider mb-1">Informal / Patient Bedside Phrase:</h2>
+        <div id="informalPrompt" class="text-base md:text-lg font-bold text-white bg-slate-950/80 p-4 rounded-xl border border-slate-700/80 text-amber-200">
+          "Informal statement will appear here..."
+        </div>
+      </div>
+
+      <!-- CHALLENGE QUESTION INSTRUCTION -->
+      <div class="bg-teal-950/40 border border-teal-700/50 p-3 rounded-xl mb-4">
+        <p id="challengeInstruction" class="text-sm font-semibold text-teal-200">
+          ⚠️ Select ALL valid formal medical terms, EHR documentation phrases, or standardized clinical equivalents:
+        </p>
+      </div>
+
+      <!-- MULTI-CHOICE OPTIONS MATRIX -->
+      <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 my-4">
+        <!-- Options injected dynamically -->
+      </div>
+
+      <!-- SUBMIT ACTION BUTTON -->
+      <div class="mt-6 flex justify-end">
+        <button id="submitBtn" class="w-full md:w-auto bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black text-lg px-8 py-3.5 rounded-xl shadow-lg transition transform active:scale-95 disabled:opacity-50">
+          SUBMIT FORMAL EVALUATION (+100 / -100) 🎯
+        </button>
+      </div>
+    </section>
+
+    <!-- FEEDBACK OVERLAY / RESULT BOX -->
+    <div id="feedbackBanner" class="hidden p-4 rounded-xl border text-center font-bold text-lg transition duration-300">
+      <div id="feedbackText"></div>
+      <div id="feedbackSubtext" class="text-xs font-normal mt-1"></div>
+      <button id="nextCaseBtn" class="mt-3 bg-slate-900 text-white text-sm px-5 py-2 rounded-lg border border-slate-600 hover:bg-slate-800 transition">
+        Next Scenario ➔
+      </button>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-950 border-t border-slate-800 p-4 text-center text-xs text-slate-500">
+    <p>Spoken English for Nursing Care Plan Training System • Reverse Register Matrix</p>
+    <p class="mt-1">Content & Pedagogical Framework © Giyono Asfarrasyid</p>
+  </footer>
+
+  <!-- AUDIO SYNTHESIZER & GAME SCRIPT -->
+  <script>
+    // --- WEB AUDIO API SOUND GENERATOR ---
+    class SoundEffects {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+      playCorrect() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        
+        // Exciting ascending fanfare chord (C5, E5, G5, C6)
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + (idx * 0.08));
+          gain.gain.setValueAtTime(0.15, now + (idx * 0.08));
+          gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.08) + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + (idx * 0.08));
+          osc.stop(now + (idx * 0.08) + 0.35);
+        });
+      }
+      playIncorrect() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        
+        // Low-frequency buzz drop
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+        
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      }
+    }
+
+    const soundFX = new SoundEffects();
+
+    // --- REVERSE GAME DATABASE: INFORMAL TO FORMAL MATCHES WITH DISTRACTORS ---
+    const reverseGameScenarios = [
+      {
+        id: 201,
+        module: "1",
+        moduleTitle: "Module 1: Pain & Symptom Intake",
+        visual: "Patient sitting in bed holding their abdomen, looking uncomfortable.",
+        informalPrompt: "It feels like a heavy weight pressing right in the middle of my chest, and the pain spreads down my left arm.",
+        instruction: "Select ALL formal clinical terms or EHR charting entries that accurately describe this patient's report:",
+        options: [
+          { text: "Patient reports retrosternal chest tightness with radiation to the left upper extremity.", isCorrect: true },
+          { text: "Chief complaint of substernal pressure radiating to the left shoulder.", isCorrect: true },
+          { text: "Patient exhibits signs of severe abdominal distension and flank pain.", isCorrect: false, reason: "Incorrect anatomical site: Abdominal/Flank distractor." },
+          { text: "Diagnosis of acute bilateral lower extremity edema.", isCorrect: false, reason: "Incorrect clinical condition: Leg swelling distractor." }
+        ]
+      },
+      {
+        id: 202,
+        module: "2",
+        moduleTitle: "Module 2: Vital Signs & Decompensation",
+        visual: "Bedside monitor displaying heart rate 128 bpm, blood pressure 82/50 mmHg, and oxygen saturation 89%.",
+        informalPrompt: "His heart is racing like crazy, his blood pressure dropped super low, and he's struggling to catch his breath!",
+        instruction: "Select ALL formal clinical documentation terms that match these physiological parameters:",
+        options: [
+          { text: "Patient is exhibiting acute sinus tachycardia with severe hypotension.", isCorrect: true },
+          { text: "Clinical findings indicate acute decompensation with arterial hypoxia (SpO2 < 90%).", isCorrect: true },
+          { text: "Patient remains normotensive with resting bradycardia.", isCorrect: false, reason: "Clinical contradiction: Low heart rate / normal BP trap." },
+          { text: "Patient reports chronic joint stiffness upon morning ambulation.", isCorrect: false, reason: "Irrelevant musculoskeletal distractor." }
+        ]
+      },
+      {
+        id: 203,
+        module: "3",
+        moduleTitle: "Module 3: Care Plan Nursing Diagnosis",
+        visual: "Nurse listening to patient's chest with a stethoscope; loud rattling sounds are heard.",
+        informalPrompt: "He can't clear out all that thick gunk from his lungs, and you can hear him rattling every time he breathes.",
+        instruction: "Select ALL formal NANDA nursing diagnoses and clinical descriptions corresponding to this condition:",
+        options: [
+          { text: "Ineffective Airway Clearance related to retained tracheobronchial secretions.", isCorrect: true },
+          { text: "Auscultation reveals bilateral coarse rhonchi secondary to mucus retention.", isCorrect: true },
+          { text: "Impaired Skin Integrity related to surgical incision dehiscence.", isCorrect: false, reason: "Incorrect domain: Surgical wound distractor." },
+          { text: "Risk for Deficient Fluid Volume related to osmotic diuresis.", isCorrect: false, reason: "Incorrect domain: Renal/Fluid balance distractor." }
+        ]
+      },
+      {
+        id: 204,
+        module: "4",
+        moduleTitle: "Module 4: ISBAR Emergency Escalation",
+        visual: "Primary nurse calling the attending doctor on the phone while holding the patient's chart.",
+        informalPrompt: "Doctor, his bandage is completely soaked through with bright red blood, and his blood pressure is crashing right now!",
+        instruction: "Select ALL formal ISBAR reporting phrases that represent this escalation:",
+        options: [
+          { text: "Patient is experiencing active surgical site hemorrhage with secondary hemodynamic instability.", isCorrect: true },
+          { text: "Assessment indicates saturated surgical dressing with bright red sanguinous drainage and hypotension.", isCorrect: true },
+          { text: "Patient exhibits mild local erythema at the peripheral IV insertion site.", isCorrect: false, reason: "Clinical discrepancy: Minor IV site redness distractor." },
+          { text: "Requesting routine dietary consultation for low-sodium meal plan.", isCorrect: false, reason: "Inappropriate urgency: Non-urgent dietary distractor." }
+        ]
+      },
+      {
+        id: 205,
+        module: "5",
+        moduleTitle: "Module 5: Medication Administration Safety",
+        visual: "Nurse preparing an IV push antibiotic at the medication cart.",
+        informalPrompt: "I'm giving you this strong antibiotic medicine through your line to stop any bad bugs from causing an infection after your operation.",
+        instruction: "Select ALL formal medication administration and pharmacological statements that correspond to this action:",
+        options: [
+          { text: "Administering intravenous Cefazolin as prophylactic antimicrobial therapy post-operatively.", isCorrect: true },
+          { text: "Executing parenteral antibiotic therapy for surgical site infection prophylaxis.", isCorrect: true },
+          { text: "Administering oral sublingual nitroglycerin for acute angina pectoris.", isCorrect: false, reason: "Pharmacological distractor: Heart medication." },
+          { text: "Instilling topical opthalmic drops for elevated intraocular pressure.", isCorrect: false, reason: "Pharmacological distractor: Eye drops." }
+        ]
+      },
+      {
+        id: 206,
+        module: "6",
+        moduleTitle: "Module 6: Wounds & Dressings",
+        visual: "Nurse removing an old dressing from a sacral pressure injury.",
+        informalPrompt: "The bottom wound looks nice and pink today with almost no fluid leaking out, so it's healing up really well.",
+        instruction: "Select ALL formal clinical evaluation entries suitable for the EHR record:",
+        options: [
+          { text: "Wound bed displays healthy granulation tissue with minimal serous exudate, indicating positive healing.", isCorrect: true },
+          { text: "Pressure ulcer demonstrates progressive epithelialization with negligible drainage.", isCorrect: true },
+          { text: "Wound bed exhibits extensive necrotic eschar requiring surgical debridement.", isCorrect: false, reason: "Clinical contradiction: Dead tissue/unhealthy wound trap." },
+          { text: "Surgical site indicates purulent discharge with foul odor consistent with abscess formation.", isCorrect: false, reason: "Clinical contradiction: Infected wound trap." }
+        ]
+      },
+      {
+        id: 207,
+        module: "8",
+        moduleTitle: "Module 8: HR & Administrative Requests",
+        visual: "Nurse sitting across from the Nurse Manager in the unit administrative office.",
+        informalPrompt: "Can I switch my night shift next Friday with David so I can attend my family event?",
+        instruction: "Select ALL formal administrative requests appropriate for hospital HR documentation:",
+        options: [
+          { text: "Submitting a formal shift rotation swap request with Nurse David for the upcoming Friday night duty.", isCorrect: true },
+          { text: "Requesting scheduling adjustment and mutual shift exchange as per facility policy.", isCorrect: true },
+          { text: "Filing an official incident report regarding medication administration double-charting.", isCorrect: false, reason: "Incorrect administrative form: Incident report trap." },
+          { text: "Requesting emergency leave due to worker's compensation injury.", isCorrect: false, reason: "Incorrect administrative form: Injury claim trap." }
+        ]
+      },
+      {
+        id: 208,
+        module: "10",
+        moduleTitle: "Module 10: Critical Care & Code Calls",
+        visual: "Crash cart pulled up to the bedside while resuscitation team prepares equipment.",
+        informalPrompt: "He stopped breathing completely and we can't feel any pulse on his neck!",
+        instruction: "Select ALL formal resuscitation calls and medical terminology corresponding to this emergency:",
+        options: [
+          { text: "Patient is in full cardiopulmonary arrest with respiratory standstill and pulselessness.", isCorrect: true },
+          { text: "Initiating Code Blue protocol for cardiac arrest and absent carotid pulse.", isCorrect: true },
+          { text: "Patient is experiencing mild vasovagal syncope with spontaneous recovery.", isCorrect: false, reason: "Severity mismatch: Simple fainting distractor." },
+          { text: "Patient reports mild hyperventilation secondary to acute anxiety.", isCorrect: false, reason: "Severity mismatch: Anxiety attack distractor." }
+        ]
+      }
+    ];
+
+    // --- GAME STATE ---
+    let currentScore = 0;
+    let currentStreak = 0;
+    let currentCaseIndex = 0;
+    let selectedIndices = new Set();
+
+    // --- DOM ELEMENTS ---
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const streakDisplay = document.getElementById('streakDisplay');
+    const caseProgressDisplay = document.getElementById('caseProgressDisplay');
+    const badgeCategory = document.getElementById('badgeCategory');
+    const visualDescription = document.getElementById('visualDescription');
+    const informalPrompt = document.getElementById('informalPrompt');
+    const challengeInstruction = document.getElementById('challengeInstruction');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const submitBtn = document.getElementById('submitBtn');
+    const feedbackBanner = document.getElementById('feedbackBanner');
+    const feedbackText = document.getElementById('feedbackText');
+    const feedbackSubtext = document.getElementById('feedbackSubtext');
+    const nextCaseBtn = document.getElementById('nextCaseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const soundToggle = document.getElementById('soundToggle');
+    const mainContainer = document.getElementById('mainContainer');
+
+    // --- INITIALIZATION ---
+    function initGame() {
+      currentScore = 0;
+      currentStreak = 0;
+      currentCaseIndex = 0;
+      updateHeaderStats();
+      loadScenario(currentCaseIndex);
+    }
+
+    function updateHeaderStats() {
+      scoreDisplay.textContent = currentScore;
+      streakDisplay.textContent = `${currentStreak}🔥`;
+      caseProgressDisplay.textContent = `${currentCaseIndex + 1} / ${reverseGameScenarios.length}`;
+    }
+
+    function loadScenario(index) {
+      if (index >= reverseGameScenarios.length) {
+        showFinalVictoryScreen();
+        return;
+      }
+
+      const caseData = reverseGameScenarios[index];
+      selectedIndices.clear();
+      feedbackBanner.classList.add('hidden');
+      submitBtn.disabled = false;
+
+      badgeCategory.textContent = caseData.moduleTitle;
+      visualDescription.textContent = `📷 Setting: ${caseData.visual}`;
+      informalPrompt.textContent = `"${caseData.informalPrompt}"`;
+      challengeInstruction.textContent = caseData.instruction;
+
+      // Build Multi-Choice Grid
+      optionsContainer.innerHTML = '';
+      caseData.options.forEach((opt, optIdx) => {
+        const card = document.createElement('div');
+        card.className = `option-card bg-slate-900/90 border-2 border-slate-700 hover:border-amber-500/80 p-4 rounded-xl cursor-pointer transition transform active:scale-98 flex items-start gap-3 text-slate-200 text-sm md:text-base select-none`;
+        card.dataset.index = optIdx;
+
+        card.innerHTML = `
+          <div class="checkbox-box w-6 h-6 rounded-md border-2 border-slate-500 flex items-center justify-center flex-shrink-0 mt-0.5 transition">
+            <span class="check-mark hidden text-amber-400 font-bold text-xs">✓</span>
+          </div>
+          <div class="flex-grow">
+            ${opt.text}
+          </div>
+        `;
+
+        card.addEventListener('click', () => toggleOptionSelect(optIdx, card));
+        optionsContainer.appendChild(card);
+      });
+
+      updateHeaderStats();
+    }
+
+    function toggleOptionSelect(index, cardElement) {
+      const checkbox = cardElement.querySelector('.checkbox-box');
+      const checkMark = cardElement.querySelector('.check-mark');
+
+      if (selectedIndices.has(index)) {
+        selectedIndices.delete(index);
+        cardElement.classList.remove('border-amber-400', 'bg-amber-950/40');
+        cardElement.classList.add('border-slate-700');
+        checkbox.classList.remove('border-amber-400', 'bg-amber-900');
+        checkMark.classList.add('hidden');
+      } else {
+        selectedIndices.add(index);
+        cardElement.classList.remove('border-slate-700');
+        cardElement.classList.add('border-amber-400', 'bg-amber-950/40');
+        checkbox.classList.add('border-amber-400', 'bg-amber-900');
+        checkMark.classList.remove('hidden');
+      }
+    }
+
+    // --- EVALUATION & SCORING LOGIC (+100 / -100) ---
+    submitBtn.addEventListener('click', () => {
+      const caseData = reverseGameScenarios[currentCaseIndex];
+      let isPerfect = true;
+      let mistakes = [];
+
+      caseData.options.forEach((opt, idx) => {
+        const wasSelected = selectedIndices.has(idx);
+        if (opt.isCorrect && !wasSelected) {
+          isPerfect = false;
+          mistakes.push(`Missed valid formal entry: "${opt.text}"`);
+        } else if (!opt.isCorrect && wasSelected) {
+          isPerfect = false;
+          mistakes.push(`Selected distractor trap: "${opt.text}" (${opt.reason})`);
+        }
+      });
+
+      submitBtn.disabled = true;
+      feedbackBanner.classList.remove('hidden');
+
+      if (isPerfect && selectedIndices.size > 0) {
+        // --- PERFECT SCORE (+100) ---
+        currentScore += 100;
+        currentStreak++;
+        soundFX.playCorrect();
+
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 75, spread: 70, origin: { y: 0.7 } });
+        }
+
+        feedbackBanner.className = "p-4 rounded-xl border border-emerald-500/80 bg-emerald-950/80 text-emerald-200 text-center shadow-lg";
+        feedbackText.innerHTML = `🎉 PERFECT FORMAL TRANSLATION! (+100 SCORE)`;
+        feedbackSubtext.textContent = "You correctly translated all bedside observations into formal medical terminology!";
+
+      } else {
+        // --- INCORRECT PENALTY (-100 & BAM) ---
+        currentScore -= 100;
+        currentStreak = 0;
+        soundFX.playIncorrect();
+
+        // Visual BAM Shake Effect
+        mainContainer.classList.add('bam-effect');
+        setTimeout(() => mainContainer.classList.remove('bam-effect'), 500);
+
+        feedbackBanner.className = "p-4 rounded-xl border border-rose-500/80 bg-rose-950/90 text-rose-200 text-center shadow-lg";
+        feedbackText.innerHTML = `💥 BAM! INCORRECT SELECTION (-100 SCORE)`;
+        feedbackSubtext.innerHTML = mistakes.length > 0 ? mistakes.join('<br>') : "You must select at least one valid formal clinical option!";
+      }
+
+      updateHeaderStats();
+    });
+
+    nextCaseBtn.addEventListener('click', () => {
+      currentCaseIndex++;
+      loadScenario(currentCaseIndex);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      initGame();
+    });
+
+    soundToggle.addEventListener('click', () => {
+      soundFX.enabled = !soundFX.enabled;
+      soundToggle.textContent = soundFX.enabled ? "🔊 Sound: ON" : "🔇 Sound: OFF";
+    });
+
+    function showFinalVictoryScreen() {
+      optionsContainer.innerHTML = '';
+      informalPrompt.textContent = "🏆 REVERSE FORMAL MATRIX COMPLETED!";
+      visualDescription.textContent = "Clinical Language Mastery Achieved";
+      challengeInstruction.textContent = "Performance Summary:";
+      
+      feedbackBanner.classList.remove('hidden');
+      feedbackBanner.className = "p-6 rounded-2xl border border-amber-500/80 bg-slate-900/95 text-amber-300 text-center shadow-2xl";
+      feedbackText.innerHTML = `FINAL MATRIX SCORE: ${currentScore} POINTS`;
+      feedbackSubtext.innerHTML = `
+        <p class="text-sm text-slate-300 mt-2">You have successfully mastered translating informal bedside communication into formal clinical terminology!</p>
+        <p class="text-xs text-amber-400 mt-2">Curriculum & Assessment Framework by <strong>Giyono Asfarrasyid</strong></p>
+      `;
+      nextCaseBtn.style.display = 'none';
+      submitBtn.style.display = 'none';
+    }
+
+    // Start game on load
+    initGame();
+  </script>
+</body>
+</html>
